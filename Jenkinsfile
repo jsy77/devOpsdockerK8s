@@ -22,8 +22,10 @@ pipeline {
                     echo "=============================="
                     echo "DOCKER BUILD"
                     echo "=============================="
-
-                    docker build -t devops-app:1.0 .
+                    
+                    echo "Building image: devops-app:${BUILD_NUMBER}"
+                    docker build -t devops-app:${BUILD_NUMBER} .
+                    
                 '''
             }
         }
@@ -40,11 +42,36 @@ pipeline {
             }
         }
         
+
+        stage('Docker Run') {
+           steps {
+                sh '''
+                  echo "=============================="
+                  echo "DOCKER RUN"
+                  echo "=============================="
+
+                  echo "Starting container: devops-app-${BUILD_NUMBER}"
+
+                  docker run -d \
+                      --name devops-app-${BUILD_NUMBER} \
+                      -p 8087:80 \
+                      devops-app:${BUILD_NUMBER}
+
+                  echo ""
+                  echo "Running containers:"
+                  docker ps
+                  '''
+           } 
+         }        
+  
         stage('clean workspace') {
             steps{
                  echo "cleaning workspace"
                  deleteDir()  
                  }
-        }
-    }
+       } 
+
+         
+   }
+
 }

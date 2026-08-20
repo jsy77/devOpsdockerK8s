@@ -17,8 +17,10 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                    echo "Building Docker image..."
+                    echo "======================================"
+                    echo "Building Docker Image"
                     echo "Image: ${IMAGE_NAME}:v${BUILD_NUMBER}"
+                    echo "======================================"
 
                     docker build \
                         -t ${IMAGE_NAME}:v${BUILD_NUMBER} .
@@ -47,7 +49,10 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 sh '''
-                    echo "Pushing Docker image..."
+                    echo "======================================"
+                    echo "Pushing Docker Image"
+                    echo "${IMAGE_NAME}:v${BUILD_NUMBER}"
+                    echo "======================================"
 
                     docker push ${IMAGE_NAME}:v${BUILD_NUMBER}
                 '''
@@ -57,19 +62,35 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
-                    echo "Creating Kubernetes Deployment..."
+                    echo "======================================"
+                    echo "Deploying to Kubernetes"
+                    echo "======================================"
 
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \
                         apply -f deployment.yaml
 
-                    echo "Creating Kubernetes Service..."
-
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \
                         apply -f service.yaml
+                '''
+            }
+        }
 
-                    echo "Waiting for Deployment..."
+        stage('Rolling Update') {
+            steps {
+                sh '''
+                    echo "======================================"
+                    echo "Updating Kubernetes Image"
+                    echo "Image: ${IMAGE_NAME}:v${BUILD_NUMBER}"
+                    echo "======================================"
+
+                    kubectl \
+                        --kubeconfig=${KUBECONFIG} \
+                        set image deployment/devops-app \
+                        devops-app=${IMAGE_NAME}:v${BUILD_NUMBER}
+
+                    echo "Waiting for rolling update..."
 
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \
@@ -81,21 +102,29 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    echo "===== Deployment ====="
+                    echo "======================================"
+                    echo "Deployment"
+                    echo "======================================"
 
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \
                         get deployment devops-app
 
                     echo ""
-                    echo "===== Pods ====="
+                    echo "======================================"
+                    echo "Pods"
+                    echo "======================================"
 
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \
-                        get pods -l app=devops-app -o wide
+                        get pods \
+                        -l app=devops-app \
+                        -o wide
 
                     echo ""
-                    echo "===== Service ====="
+                    echo "======================================"
+                    echo "Service"
+                    echo "======================================"
 
                     kubectl \
                         --kubeconfig=${KUBECONFIG} \

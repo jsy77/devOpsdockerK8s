@@ -1,94 +1,52 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "jsy77/devops"
+    }
+
     stages {
 
         stage('Checkout') {
             steps {
-                echo 'Source code should already be checked out by Jenkins.'
-                sh '''
-                    echo "Current workspace:"
-                    pwd
-
-                    echo "Workspace contents:"
-                    ls -la
-                '''
+                checkout scm
             }
         }
 
-        stage('Docker Build') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
-                    echo "=============================="
-                    echo "DOCKER BUILD"
-                    echo "=============================="
-                    
-                    echo "Building image: devops-app:${BUILD_NUMBER}"
-                    docker build -t devops-app:${BUILD_NUMBER} .
-                    
+                    docker build \
+                    -t ${IMAGE_NAME}:v${BUILD_NUMBER} .
                 '''
             }
         }
 
-        stage('chekcing available images') {
+        stage('Docker Login') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerHub_creds',
+                        usernameVariable: 'DOCKER_USERNAME',
+                        passwordVariable: 'DOCKER_PASSWORD'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DOCKER_PASSWORD" | docker login \
+                        -u "$DOCKER_USERNAME" \
+                        --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Push Docker Image') {
             steps {
                 sh '''
-                    echo "=============================="
-                    echo "DOCKER VERIFY"
-                    echo "=============================="
-
-                    docker images | grep devops-app
+                    docker push ${IMAGE_NAME}:v${BUILD_NUMBER}
+                    
                 '''
             }
         }
-        
-
-        stage('Docker Run') {
-           steps {
-                sh '''
-                  echo "=============================="
-                  echo "DOCKER RUN"
-                  echo "=============================="
-
-                  echo "Starting container: devops-app-${BUILD_NUMBER}"
-
-                  docker run -d \
-                      --name devops-app-${BUILD_NUMBER} \
-                      -p 8087:80 \
-                      devops-app:${BUILD_NUMBER}
-
-                  echo ""
-                  echo "Running containers:"
-                  docker ps
-                  '''
-           } 
-         }        
- 
-        stage('Docker Verify') {
-    		steps {
-        	sh '''
-            	echo "=============================="
-            	echo "DOCKER VERIFY"
-            	echo "=============================="
-
-            	echo "Verifying image: devops-app:${BUILD_NUMBER}"
-
-            	docker image inspect devops-app:${BUILD_NUMBER}
-
-            	echo ""
-            	echo "Image verified successfully."
-       		'''
     }
-      }
- 
-        stage('clean workspace') {
-            steps{
-                 echo "cleaning workspace"
-                 deleteDir()  
-                 }
-       } 
-
-         
-   }
-
 }

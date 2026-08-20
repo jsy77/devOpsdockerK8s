@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: devops-app
-          image: jsy77/devops:v7
+          image: jsy77/devops:v8
           ports:
             - containerPort: 80

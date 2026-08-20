@@ -63,7 +63,24 @@ pipeline {
                   '''
            } 
          }        
-  
+ 
+        stage('Docker Verify') {
+    		steps {
+        	sh '''
+            	echo "=============================="
+            	echo "DOCKER VERIFY"
+            	echo "=============================="
+
+            	echo "Verifying image: devops-app:${BUILD_NUMBER}"
+
+            	docker image inspect devops-app:${BUILD_NUMBER}
+
+            	echo ""
+            	echo "Image verified successfully."
+       		'''
+    }
+      }
+ 
         stage('clean workspace') {
             steps{
                  echo "cleaning workspace"

@@ -63,7 +63,7 @@ pipeline {
             steps {
                 sh '''
                     echo "======================================"
-                    echo "Deploying to Kubernetes"
+                    echo "Applying Kubernetes configuration"
                     echo "======================================"
 
                     kubectl \
@@ -79,23 +79,58 @@ pipeline {
 
         stage('Rolling Update') {
             steps {
-                sh '''
-                    echo "======================================"
-                    echo "Updating Kubernetes Image"
-                    echo "Image: ${IMAGE_NAME}:v${BUILD_NUMBER}"
-                    echo "======================================"
+                script {
 
-                    kubectl \
-                        --kubeconfig=${KUBECONFIG} \
-                        set image deployment/devops-app \
-                        devops-app=${IMAGE_NAME}:v${BUILD_NUMBER}
+                    try {
 
-                    echo "Waiting for rolling update..."
+                        sh '''
+                            echo "======================================"
+                            echo "Starting Rolling Update"
+                            echo "New Image: ${IMAGE_NAME}:v${BUILD_NUMBER}"
+                            echo "======================================"
 
-                    kubectl \
-                        --kubeconfig=${KUBECONFIG} \
-                        rollout status deployment/devops-app
-                '''
+                            kubectl \
+                                --kubeconfig=${KUBECONFIG} \
+                                set image deployment/devops-app \
+                                devops-app=${IMAGE_NAME}:v${BUILD_NUMBER}
+                        '''
+
+                        sh '''
+                            echo "Waiting for rollout..."
+
+                            kubectl \
+                                --kubeconfig=${KUBECONFIG} \
+                                rollout status deployment/devops-app \
+                                --timeout=60s
+                        '''
+
+                        echo "Rolling update successful."
+
+                    } catch (Exception e) {
+
+                        echo "======================================"
+                        echo "ROLLING UPDATE FAILED"
+                        echo "Starting automatic rollback"
+                        echo "======================================"
+
+                        sh '''
+                            kubectl \
+                                --kubeconfig=${KUBECONFIG} \
+                                rollout undo deployment/devops-app
+                        '''
+
+                        sh '''
+                            kubectl \
+                                --kubeconfig=${KUBECONFIG} \
+                                rollout status deployment/devops-app \
+                                --timeout=60s
+                        '''
+
+                        echo "Rollback completed."
+
+                        throw e
+                    }
+                }
             }
         }
 

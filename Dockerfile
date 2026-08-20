@@ -1,5 +1,3 @@
-FROM nginx:latest
+FROM nginx
 
-COPY index.html /usr/share/nginx/html/index.html
-
-EXPOSE 80
+CMD ["sh", "-c", "echo 'Intentional Jenkins rollback test' && exit 1"]

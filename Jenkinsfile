@@ -30,7 +30,7 @@ pipeline {
             }
         }
 
-        stage('Docker Verify') {
+        stage('chekcing available images') {
             steps {
                 sh '''
                     echo "=============================="

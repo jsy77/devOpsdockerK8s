@@ -5,19 +5,38 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo 'Checking out source code...'
+                echo 'Source code should already be checked out by Jenkins.'
+                sh '''
+                    echo "Current workspace:"
+                    pwd
+
+                    echo "Workspace contents:"
+                    ls -la
+                '''
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t devops-app:1.0 .'
+                sh '''
+                    echo "=============================="
+                    echo "DOCKER BUILD"
+                    echo "=============================="
+
+                    docker build -t devops-app:1.0 .
+                '''
             }
         }
 
         stage('Docker Verify') {
             steps {
-                sh 'docker images | grep devops-app'
+                sh '''
+                    echo "=============================="
+                    echo "DOCKER VERIFY"
+                    echo "=============================="
+
+                    docker images | grep devops-app
+                '''
             }
         }
     }

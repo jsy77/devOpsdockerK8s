@@ -39,5 +39,12 @@ pipeline {
                 '''
             }
         }
+        
+        stage('clean workspace') {
+            steps{
+                 echo "cleaning workspace"
+                 deleteDir()  
+                 }
+        }
     }
 }
